@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, orientation=landscape">
+    <title>Cyclic Label Calendar</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            height: 50vh; /* Reduced height by 50% */
+            width: 50vw; /* Reduced width by 50% */
+            margin: auto; /* Center the grid */
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background: #333;
+        }
+
+        .controls select {
+            margin: 0 10px;
+            font-size: 11px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            padding: 10px;
+        }
+
+        .calendar-grid div {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 5px;
+            box-sizing: border-box;
+            font-size: calc(8px + 0.5vw);
+            text-align: center;
+        }
+
+        .calendar-grid .header {
+            font-size: 11px;
+            font-weight: bold;
+            background: #444;
+        }
+
+        .calendar-grid .day {
+            min-height: 40px; /* Adjusted for reduced size */
+            min-width: 40px; /* Adjusted for reduced size */
+        }
+
+        .calendar-grid .highlight {
+            background: red;
+        }
+
+        .label {
+            font-size: calc(6px + 0.5vw);
+            word-wrap: break-word;
+            font-family: sans-serif;
+            margin-top: 1px; /* Reduced space by 50% */
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar">
+        <div class="controls">
+            <label for="label-set"> </label>
+            <select id="label-set">
+                <option value="ibibio">Ibibio</option>
+                <option value="efik">Efik</option>
+                <option value="annañ">Annañ</option>
+                <option value="oron">Oron</option>
+                <option value="ubium">Ubium</option>
+            </select>
+
+            <label for="year"> </label>
+            <select id="year"></select>
+
+            <label for="month"> </label>
+            <select id="month"></select>
+        </div>
+
+        <div class="calendar-grid" id="calendar">
+            <!-- Calendar will be dynamically generated -->
+        </div>
+    </div>
+
+    <script>
+        const labelSets = {
+            ibibio: ["Obo", "Edemobo", "Fioñadan", "Aderataha", "Etaha", "Edemetaha", "Fioñetək", "Adereobo"],
+            efik: ["Ekpri Ibibio", "Ekpri Ikwo", "Akwa Ofioñ", "Akwa Ederi", "Akwa Ibibio", "Akwa Ikwo", "Ekpri Ofioñ", "Ekpri Ederi"],
+            annañ: ["Obo", "Uruabom", "Ofioň", "Edet", "Editaha", "Etim", "Ekpenyoñ", "Edereobo"],
+            oron: ["Obriboñ", "Uweh", "Nwikpi", "Odiebo", "Odieto", "Ududa", "Urue Asañ", "Ububo"],
+            ubium: ["Obo", "Uduam", "Fioñadan", "Ederétaha", "Ataetaha", "Udua Ukat", "Fioñetok", "Edereobo"],
+        };
+
+        const startDate = new Date(1960, 0, 1);
+        const endDate = new Date(4172, 11, 31);
+        const currentDate = new Date();
+
+        function populateYearAndMonth() {
+            const yearSelect = document.getElementById("year");
+            const monthSelect = document.getElementById("month");
+
+            for (let year = startDate.getFullYear(); year <= endDate.getFullYear(); year++) {
+                const option = document.createElement("option");
+                option.value = year;
+                option.textContent = year;
+                if (year === currentDate.getFullYear()) option.selected = true;
+                yearSelect.appendChild(option);
+            }
+
+            for (let month = 0; month < 12; month++) {
+                const option = document.createElement("option");
+                option.value = month;
+                option.textContent = new Date(0, month).toLocaleString("default", { month: "long" });
+                if (month === currentDate.getMonth()) option.selected = true;
+                monthSelect.appendChild(option);
+            }
+        }
+
+        function generateCalendar() {
+            const year = parseInt(document.getElementById("year").value, 10);
+            const month = parseInt(document.getElementById("month").value, 10);
+            const labelSet = document.getElementById("label-set").value;
+            const labels = labelSets[labelSet];
+
+            const calendarGrid = document.getElementById("calendar");
+            calendarGrid.innerHTML = "";
+
+            // Add headers
+            const headers = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            headers.forEach(header => {
+                const div = document.createElement("div");
+                div.classList.add("header");
+                div.textContent = header;
+                calendarGrid.appendChild(div);
+            });
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+
+            // Add empty days for the first week
+            for (let i = 0; i < firstDay.getDay(); i++) {
+                const div = document.createElement("div");
+                div.classList.add("day");
+                calendarGrid.appendChild(div);
+            }
+
+            // Add days with labels
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const div = document.createElement("div");
+                div.classList.add("day");
+                if (
+                    year === currentDate.getFullYear() &&
+                    month === currentDate.getMonth() &&
+                    day === currentDate.getDate()
+                ) {
+                    div.classList.add("highlight");
+                }
+
+                const date = new Date(year, month, day);
+                const cycleIndex = Math.floor((date - startDate) / (1000 * 60 * 60 * 24)) % labels.length;
+
+                const dayDiv = document.createElement("div");
+                dayDiv.textContent = day;
+                div.appendChild(dayDiv);
+
+                const labelDiv = document.createElement("div");
+                labelDiv.classList.add("label");
+                labelDiv.textContent = labels[cycleIndex];
+                div.appendChild(labelDiv);
+
+                calendarGrid.appendChild(div);
+            }
+        }
+
+        document.getElementById("label-set").addEventListener("change", generateCalendar);
+        document.getElementById("year").addEventListener("change", generateCalendar);
+        document.getElementById("month").addEventListener("change", generateCalendar);
+
+        populateYearAndMonth();
+        generateCalendar();
+    </script>
+</body>
+</html>
